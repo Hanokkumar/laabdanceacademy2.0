@@ -177,18 +177,18 @@ const Footer = () => {
         </div>
       </div>
 
-      {/* Copyright + staff entry — utility strip */}
+      {/* Copyright + staff entry — utility strip (extra pb/pr: clear fixed scroll-to-top FAB z-50 bottom-right) */}
       <div className="border-t border-white/10 bg-black/20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-7">
+        <div className="max-w-7xl mx-auto px-4 pt-6 pb-28 sm:px-6 sm:pt-7 sm:pb-24 lg:pl-8 lg:pr-28 lg:pb-20">
           <div className="flex flex-col items-center gap-5 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
-            <p className="text-center text-gray-500 font-dm-sans text-sm sm:text-left sm:max-w-[min(100%,28rem)]">
+            <p className="text-center text-gray-500 font-dm-sans text-sm sm:text-left sm:max-w-md lg:max-w-lg">
               {footerData.copyright}
             </p>
             <button
               type="button"
               onClick={() => { navigate('/admin'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
               aria-label="Open admin panel — sign in to manage site content"
-              className="group relative w-full max-w-sm shrink-0 overflow-hidden rounded-xl border border-white/10 bg-gradient-to-b from-white/[0.07] to-white/[0.02] px-4 py-3 text-left shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)] transition-all duration-300 ease-out hover:border-primary/40 hover:shadow-[0_12px_36px_-14px_rgba(189,9,23,0.5)] hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/70 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a0a0a] active:translate-y-0 sm:max-w-[17.5rem] sm:py-2.5"
+              className="group relative z-[1] flex min-h-[3.25rem] w-full max-w-sm shrink-0 overflow-hidden rounded-xl border border-white/20 bg-gradient-to-b from-white/12 to-zinc-950/95 px-4 py-3 text-left shadow-[inset_0_1px_0_0_rgba(255,255,255,0.08)] transition-all duration-300 ease-out hover:border-primary/50 hover:shadow-[0_12px_36px_-14px_rgba(189,9,23,0.5)] hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/70 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a0a0a] active:translate-y-0 sm:max-w-[17.5rem] sm:py-2.5"
             >
               <span
                 className="pointer-events-none absolute inset-0 bg-gradient-to-br from-primary/[0.18] via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100"
