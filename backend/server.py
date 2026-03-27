@@ -86,6 +86,10 @@ else:
 
 def _cloudinary_ready() -> bool:
     cfg = cloudinary.config()
+    # cloudinary>=1.44: CLOUDINARY_URL sets only `cloudinary_url` on Config, not cloud_name/api_key fields.
+    url = getattr(cfg, "cloudinary_url", None) or ""
+    if str(url).strip():
+        return True
     return bool(cfg.cloud_name and cfg.api_key and cfg.api_secret)
 
 
@@ -112,7 +116,11 @@ if not _cloudinary_ready():
         "CLOUDINARY_API_SECRET. Admin uploads will return 500 until this is set."
     )
 else:
-    logger.info("Cloudinary ready (cloud_name=%s)", cloudinary.config().cloud_name)
+    _cfg = cloudinary.config()
+    _label = _cfg.cloud_name or (
+        _cfg.cloudinary_url.split("@")[-1] if getattr(_cfg, "cloudinary_url", None) else "?"
+    )
+    logger.info("Cloudinary ready (cloud_name=%s)", _label)
 
 
 # ===== MODELS =====

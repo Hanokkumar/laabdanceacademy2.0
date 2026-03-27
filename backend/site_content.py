@@ -353,6 +353,9 @@ class ClassScheduleUpdate(BaseModel):
 
 def _cloudinary_configured() -> bool:
     cfg = cloudinary.config()
+    url = getattr(cfg, "cloudinary_url", None) or ""
+    if str(url).strip():
+        return True
     return bool(cfg.cloud_name and cfg.api_key and cfg.api_secret)
 
 
