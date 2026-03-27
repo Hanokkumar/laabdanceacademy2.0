@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Facebook, Instagram, Twitter, Linkedin, Mail, Phone, MapPin, ArrowUp, Send, Loader2 } from 'lucide-react';
+import {
+  Facebook, Instagram, Twitter, Linkedin, Mail, Phone, MapPin, ArrowUp, Send, Loader2,
+  LayoutDashboard, ChevronRight,
+} from 'lucide-react';
 import { footerData } from '../data/mockData';
 import axios from 'axios';
 import { API_BASE as API } from '../apiConfig';
@@ -116,6 +119,7 @@ const Footer = () => {
               ].map((link) => (
                 <li key={link.label}>
                   <button
+                    type="button"
                     onClick={() => { navigate(link.path); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
                     className="text-gray-400 hover:text-primary font-dm-sans text-sm transition-colors duration-300 flex items-center gap-2"
                   >
@@ -173,12 +177,43 @@ const Footer = () => {
         </div>
       </div>
 
-      {/* Copyright */}
-      <div className="border-t border-white/10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <p className="text-center text-gray-500 font-dm-sans text-sm">
-            {footerData.copyright}
-          </p>
+      {/* Copyright + staff entry — utility strip */}
+      <div className="border-t border-white/10 bg-black/20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-7">
+          <div className="flex flex-col items-center gap-5 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
+            <p className="text-center text-gray-500 font-dm-sans text-sm sm:text-left sm:max-w-[min(100%,28rem)]">
+              {footerData.copyright}
+            </p>
+            <button
+              type="button"
+              onClick={() => { navigate('/admin'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+              aria-label="Open admin panel — sign in to manage site content"
+              className="group relative w-full max-w-sm shrink-0 overflow-hidden rounded-xl border border-white/10 bg-gradient-to-b from-white/[0.07] to-white/[0.02] px-4 py-3 text-left shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)] transition-all duration-300 ease-out hover:border-primary/40 hover:shadow-[0_12px_36px_-14px_rgba(189,9,23,0.5)] hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/70 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a0a0a] active:translate-y-0 sm:max-w-[17.5rem] sm:py-2.5"
+            >
+              <span
+                className="pointer-events-none absolute inset-0 bg-gradient-to-br from-primary/[0.18] via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+                aria-hidden
+              />
+              <span className="relative flex items-center gap-3">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/15 text-primary shadow-inner ring-1 ring-inset ring-primary/25 transition-colors duration-300 group-hover:bg-primary/25 group-hover:ring-primary/40 sm:h-8 sm:w-8">
+                  <LayoutDashboard className="h-[18px] w-[18px] sm:h-4 sm:w-4" strokeWidth={1.75} aria-hidden />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block font-manrope text-sm font-semibold tracking-tight text-white sm:text-[13px]">
+                    Admin panel
+                  </span>
+                  <span className="mt-0.5 block font-dm-sans text-[11px] leading-snug text-gray-500 transition-colors group-hover:text-gray-400 sm:text-[10px] sm:leading-tight">
+                    Manage classes, events & media
+                  </span>
+                </span>
+                <ChevronRight
+                  className="h-4 w-4 shrink-0 text-gray-500 transition-all duration-300 group-hover:translate-x-0.5 group-hover:text-primary sm:h-3.5 sm:w-3.5"
+                  strokeWidth={2}
+                  aria-hidden
+                />
+              </span>
+            </button>
+          </div>
         </div>
       </div>
 
