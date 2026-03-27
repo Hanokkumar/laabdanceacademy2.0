@@ -1,10 +1,37 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { MapPin } from 'lucide-react';
-import { events } from '../data/mockData';
+import { events as mockEvents } from '../data/mockData';
 import useScrollAnimation from '../hooks/useScrollAnimation';
+import axios from 'axios';
+
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+const API = `${BACKEND_URL}/api`;
 
 const EventsSection = () => {
   const [ref, isVisible] = useScrollAnimation();
+  const [events, setEvents] = useState([]);
+
+  useEffect(() => {
+    const fetchEvents = async () => {
+      try {
+        const res = await axios.get(`${API}/events`);
+        if (res.data && res.data.length > 0) {
+          setEvents(res.data.slice(0, 3));
+        } else {
+          setEvents(mockEvents);
+        }
+      } catch {
+        setEvents(mockEvents);
+      }
+    };
+    fetchEvents();
+  }, []);
+
+  const getImageUrl = (image) => {
+    if (!image) return 'https://images.unsplash.com/photo-1550026593-dd8ce0749590?w=600&q=80';
+    if (image.startsWith('http')) return image;
+    return `${BACKEND_URL}${image}`;
+  };
 
   return (
     <section id="events" className="py-20 lg:py-28 bg-white">
@@ -42,7 +69,7 @@ const EventsSection = () => {
               {/* Image */}
               <div className="relative overflow-hidden">
                 <img
-                  src={event.image}
+                  src={getImageUrl(event.image)}
                   alt={event.title}
                   className="w-full h-56 object-cover transition-transform duration-500 group-hover:scale-110"
                 />
