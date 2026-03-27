@@ -26,7 +26,6 @@ try:
 except ImportError:
     pass
 import re
-from urllib.parse import urlparse, unquote
 import cloudinary
 import cloudinary.uploader
 
@@ -59,27 +58,36 @@ JWT_EXPIRATION_HOURS = 24
 ADMIN_USERNAME = os.environ.get('ADMIN_USERNAME', 'admin')
 ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD', 'admin123')
 
-# Cloudinary config
-CLOUDINARY_URL = os.environ.get("CLOUDINARY_URL", "")
+# Cloudinary — use the SDK URL parser (manual urlparse can mis-read some secrets / cloud names).
+
+
+def _normalize_cloudinary_url(raw: str) -> str:
+    """Strip whitespace; allow pasting `CLOUDINARY_URL=cloudinary://...` from docs by mistake."""
+    t = (raw or "").strip()
+    if not t:
+        return ""
+    if t.upper().startswith("CLOUDINARY_URL="):
+        t = t.split("=", 1)[1].strip()
+    return t.strip('"').strip("'")
+
+
+CLOUDINARY_URL = _normalize_cloudinary_url(os.environ.get("CLOUDINARY_URL", ""))
 if CLOUDINARY_URL:
-    try:
-        parsed = urlparse(CLOUDINARY_URL)
-        cloudinary.config(
-            cloud_name=parsed.hostname,
-            api_key=unquote(parsed.username or ""),
-            api_secret=unquote(parsed.password or ""),
-            secure=True,
-        )
-    except Exception as e:
-        logging.getLogger(__name__).warning(f"Failed to parse CLOUDINARY_URL: {str(e)}")
-        cloudinary.config(cloudinary_url=CLOUDINARY_URL, secure=True)
+    # Official SDK parsing — more reliable than urllib.parse for cloudinary:// URLs.
+    cloudinary.config(cloudinary_url=CLOUDINARY_URL, secure=True)
 else:
     cloudinary.config(
-        cloud_name=os.environ.get("CLOUDINARY_CLOUD_NAME", ""),
-        api_key=os.environ.get("CLOUDINARY_API_KEY", ""),
-        api_secret=os.environ.get("CLOUDINARY_API_SECRET", ""),
+        cloud_name=os.environ.get("CLOUDINARY_CLOUD_NAME", "").strip(),
+        api_key=os.environ.get("CLOUDINARY_API_KEY", "").strip(),
+        api_secret=os.environ.get("CLOUDINARY_API_SECRET", "").strip(),
         secure=True,
     )
+
+
+def _cloudinary_ready() -> bool:
+    cfg = cloudinary.config()
+    return bool(cfg.cloud_name and cfg.api_key and cfg.api_secret)
+
 
 # Create the main app
 app = FastAPI()
@@ -96,6 +104,15 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
+
+if not _cloudinary_ready():
+    logger.warning(
+        "Cloudinary is not configured: set CLOUDINARY_URL on the server (Dashboard → API Keys → "
+        "copy the full env value), or set CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, and "
+        "CLOUDINARY_API_SECRET. Admin uploads will return 500 until this is set."
+    )
+else:
+    logger.info("Cloudinary ready (cloud_name=%s)", cloudinary.config().cloud_name)
 
 
 # ===== MODELS =====
@@ -409,8 +426,7 @@ async def upload_image(
     folder: str = Form("events"),
     username: str = Depends(verify_token),
 ):
-    cld_cfg = cloudinary.config()
-    if not cld_cfg.api_key or not cld_cfg.api_secret or not cld_cfg.cloud_name:
+    if not _cloudinary_ready():
         raise HTTPException(status_code=500, detail="Cloudinary is not configured on server")
 
     content_type = _normalize_upload_content_type(file)
@@ -509,7 +525,7 @@ async def upload_image(
 
 @api_router.delete("/uploads/{asset_path:path}")
 async def delete_upload(asset_path: str, username: str = Depends(verify_token)):
-    if not CLOUDINARY_URL:
+    if not _cloudinary_ready():
         raise HTTPException(status_code=500, detail="Cloudinary is not configured on server")
     public_id = re.sub(r"\.[^./]+$", "", asset_path)
     await asyncio.to_thread(cloudinary.uploader.destroy, public_id, resource_type="image", invalidate=True)
