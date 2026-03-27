@@ -3,9 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import useScrollAnimation from '../hooks/useScrollAnimation';
 import { MapPin, Phone, Mail, Clock, Send, Loader2 } from 'lucide-react';
 import axios from 'axios';
-
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
-const API = `${BACKEND_URL}/api`;
+import { API_BASE as API } from '../apiConfig';
 
 const ContactPage = () => {
   const [ref1, isVisible1] = useScrollAnimation();

@@ -1,9 +1,7 @@
 import React, { useState } from 'react';
 import { X, Send, Loader2 } from 'lucide-react';
 import axios from 'axios';
-
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
-const API = `${BACKEND_URL}/api`;
+import { API_BASE as API } from '../apiConfig';
 
 const JoinClassModal = ({ isOpen, onClose }) => {
   const [formData, setFormData] = useState({

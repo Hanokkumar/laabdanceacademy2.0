@@ -35,6 +35,7 @@ dist
 .env.*
 !.env.example
 !.env.production
+!frontend/.env.development
 backend/.env
 frontend/.env
 

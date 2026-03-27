@@ -3,8 +3,7 @@ import axios from 'axios';
 import { useAuth } from '../../contexts/AuthContext';
 import { invalidateSiteContentCache } from '../../hooks/useSiteContent';
 import { Loader2, Save, Plus, Trash2 } from 'lucide-react';
-
-const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+import { API_BASE as API } from '../../apiConfig';
 
 const DAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
 const LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];

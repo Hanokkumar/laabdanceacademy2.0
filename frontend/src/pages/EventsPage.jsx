@@ -4,9 +4,7 @@ import { events as mockEvents } from '../data/mockData';
 import useScrollAnimation from '../hooks/useScrollAnimation';
 import { MapPin } from 'lucide-react';
 import axios from 'axios';
-
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
-const API = `${BACKEND_URL}/api`;
+import { BACKEND_URL, API_BASE as API } from '../apiConfig';
 const isVideoUrl = (url = '') => /\.(mp4|webm|mov)(\?.*)?$/i.test(url);
 
 const EventsPage = () => {

@@ -6,8 +6,7 @@ import { useDeferredImageUpload } from '../../hooks/useDeferredImageUpload';
 import { IMAGE_FILE_ACCEPT } from '../../utils/imageFiles';
 import { Loader2, Save, Trash2, Upload } from 'lucide-react';
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
-const API = `${BACKEND_URL}/api`;
+import { BACKEND_URL, API_BASE as API } from '../../apiConfig';
 
 const emptyForm = () => ({
   title: '',

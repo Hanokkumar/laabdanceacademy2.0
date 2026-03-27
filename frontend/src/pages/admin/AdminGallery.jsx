@@ -6,8 +6,7 @@ import { useDeferredImageUploadMulti } from '../../hooks/useDeferredImageUploadM
 import { Loader2, Trash2, Upload, Link2, Database, X, RefreshCw } from 'lucide-react';
 import { IMAGE_FILE_ACCEPT, isImageLikeFile } from '../../utils/imageFiles';
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
-const API = `${BACKEND_URL}/api`;
+import { BACKEND_URL, API_BASE as API } from '../../apiConfig';
 
 const AdminGallery = () => {
   const { getAuthHeaders } = useAuth();

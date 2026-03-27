@@ -3,9 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Facebook, Instagram, Twitter, Linkedin, Mail, Phone, MapPin, ArrowUp, Send, Loader2 } from 'lucide-react';
 import { footerData } from '../data/mockData';
 import axios from 'axios';
-
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
-const API = `${BACKEND_URL}/api`;
+import { API_BASE as API } from '../apiConfig';
 const BRAND_LOGO = 'https://res.cloudinary.com/db3cpuhrq/image/upload/v1774629759/IMG_1458__1_-removebg-preview_rrcajv.png';
 
 const Footer = () => {
