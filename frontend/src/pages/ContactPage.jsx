@@ -36,8 +36,8 @@ const ContactPage = () => {
   };
 
   const contactInfo = [
-    { icon: MapPin, title: 'Our Location', text: '123 Dance Street, Creative City, CA 90210' },
-    { icon: Phone, title: 'Phone Number', text: '+1 234 567 890' },
+    { icon: MapPin, title: 'Our Location', text: '1st Floor, No: 10, Rajiv Gandhi Salai, Navalur, Chennai, Tamil Nadu 600130' },
+    { icon: Phone, title: 'Phone Number', text: '073583 55216' },
     { icon: Mail, title: 'Email Address', text: 'info@danceacademy.com' },
     { icon: Clock, title: 'Working Hours', text: 'Mon - Sat: 8:00 AM - 9:00 PM' },
   ];
@@ -144,7 +144,7 @@ const ContactPage = () => {
       <section className="h-[400px] bg-gray-200">
         <iframe
           title="Location Map"
-          src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3153.0977!2d-122.4194!3d37.7749!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMzfCsDQ2JzI5LjYiTiAxMjLCsDI1JzA5LjgiVw!5e0!3m2!1sen!2sus!4v1234567890"
+          src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3888.8!2d80.2272!3d12.8449!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3a525a00f72e0c7b%3A0x3b7b4c8f5e8f0c0a!2sNavalur%2C%20Chennai%2C%20Tamil%20Nadu%20600130!5e0!3m2!1sen!2sin!4v1234567890"
           width="100%" height="100%" style={{ border: 0 }} allowFullScreen="" loading="lazy"
         />
       </section>
