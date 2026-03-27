@@ -191,6 +191,6 @@ test_plan:
 
 agent_communication:
     - agent: "main"
-    - message: "Test all backend endpoints. Admin credentials: username=admin, password=admin123. Test flow: 1) Login to get JWT 2) Create event 3) Get events 4) Update event 5) Delete event. Also test image upload and email endpoints."
+    - message: "Test all backend endpoints. Use admin credentials from your backend environment (do not commit real passwords). Test flow: 1) Login to get JWT 2) Create event 3) Get events 4) Update event 5) Delete event. Also test image upload and email endpoints."
     - agent: "testing"
     - message: "✅ BACKEND TESTING COMPLETE: All 13 backend API tests passed (100% success rate). Tested admin authentication (login/verify), full event CRUD operations, image upload with file validation, and all email form endpoints (join-class, contact, newsletter). All endpoints working correctly with proper auth protection, data persistence, and email integration. Backend logs confirm successful operations. No issues found."
