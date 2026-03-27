@@ -25,11 +25,24 @@ function isLocalHostOrigin(url) {
   }
 }
 
+/** Legacy Emergent preview host — always use Render (`SITE_API_ORIGIN`) instead. */
+function isDeprecatedEmergentPreview(url) {
+  try {
+    const { hostname } = new URL(url);
+    return hostname === 'dance-academy-ui.preview.emergentagent.com';
+  } catch {
+    return false;
+  }
+}
+
 function normalizeBackendUrl(url) {
   if (url == null || typeof url !== 'string') return DEFAULT_BACKEND;
   const t = url.trim();
   if (!t) return DEFAULT_BACKEND;
   const noTrail = t.replace(/\/$/, '');
+  if (!USE_LOCAL_API && isDeprecatedEmergentPreview(noTrail)) {
+    return DEFAULT_BACKEND;
+  }
   if (!USE_LOCAL_API && isLocalHostOrigin(noTrail)) {
     return DEFAULT_BACKEND;
   }

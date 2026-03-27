@@ -11,8 +11,8 @@ import sys
 from datetime import datetime
 import uuid
 
-# Backend URL from frontend .env
-BACKEND_URL = "https://dance-academy-ui.preview.emergentagent.com"
+# Default: Render production API (override with BACKEND_URL env for local runs)
+BACKEND_URL = os.environ.get("BACKEND_URL", "https://laabdanceacademy2-0.onrender.com")
 API_BASE = f"{BACKEND_URL}/api"
 
 class DanceAcademyAPITester:
