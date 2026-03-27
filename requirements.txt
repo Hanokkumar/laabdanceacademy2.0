@@ -1,0 +1,2 @@
+# Monorepo: delegate to backend (Render build runs from repo root)
+-r backend/requirements.txt
