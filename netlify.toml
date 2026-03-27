@@ -1,0 +1,11 @@
+# Netlify hosts the React app only. Python/FastAPI runs on Render — do not install Python here.
+# Using base = "frontend" avoids repo-root requirements.txt (meant for Render) triggering mise/Python.
+# If Python still runs, delete PYTHON_VERSION / runtime.txt overrides in the Netlify UI (Site settings).
+
+[build]
+  base = "frontend"
+  command = "yarn install --frozen-lockfile && yarn build"
+  publish = "build"
+
+[build.environment]
+  NODE_VERSION = "20"
