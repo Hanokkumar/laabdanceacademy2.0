@@ -54,7 +54,7 @@ const EventForm = () => {
       };
       fetchEvent();
     }
-  }, [id, isEditing]);
+  }, [id, isEditing, originalSavedUrlRef]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
