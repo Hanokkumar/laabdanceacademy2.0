@@ -9,6 +9,8 @@
 
 [build.environment]
   NODE_VERSION = "20"
-  # Same as frontend/.env — FastAPI on Render (no trailing slash)
+  # Public API origin only (not a private key). Netlify secret-scan treats *_URL like secrets otherwise.
+  SECRETS_SCAN_OMIT_KEYS = "REACT_APP_BACKEND_URL"
+  SECRETS_SCAN_SMART_DETECTION_OMIT_VALUES = "https://laabdanceacademy2-0.onrender.com"
   REACT_APP_BACKEND_URL = "https://laabdanceacademy2-0.onrender.com"
   ENABLE_HEALTH_CHECK = "false"
