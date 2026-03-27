@@ -7,6 +7,7 @@ import axios from 'axios';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
+const isVideoUrl = (url = '') => /\.(mp4|webm|mov)(\?.*)?$/i.test(url);
 
 const EventsPage = () => {
   const [ref1, isVisible1] = useScrollAnimation();
@@ -81,7 +82,22 @@ const EventsPage = () => {
               {events.map((event) => (
                 <div key={event.id} className="group bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-500 border border-gray-100">
                   <div className="relative overflow-hidden">
-                    <img src={getImageUrl(event.image)} alt={event.title} className="w-full h-56 object-cover transition-transform duration-500 group-hover:scale-110" />
+                    {isVideoUrl(getImageUrl(event.image)) ? (
+                      <video
+                        src={getImageUrl(event.image)}
+                        className="w-full h-56 object-cover transition-transform duration-500 group-hover:scale-110"
+                        controls
+                        preload="metadata"
+                      />
+                    ) : (
+                      <img
+                        src={getImageUrl(event.image)}
+                        alt={event.title}
+                        loading="lazy"
+                        decoding="async"
+                        className="w-full h-56 object-cover transition-transform duration-500 group-hover:scale-110"
+                      />
+                    )}
                     <div className="absolute top-4 left-4 bg-primary text-white rounded-lg px-3 py-2 text-center">
                       <span className="block text-2xl font-bold font-manrope leading-none">{event.date}</span>
                       <span className="block text-xs font-dm-sans uppercase mt-0.5">{event.month}</span>

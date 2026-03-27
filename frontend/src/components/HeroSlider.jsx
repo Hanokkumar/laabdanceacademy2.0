@@ -56,10 +56,10 @@ const HeroSlider = () => {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center w-full">
               {/* Text Content */}
               <div
-                className={`transition-all duration-1000 delay-200 ${
+                className={`transition-all duration-[900ms] ease-out delay-200 ${
                   index === currentSlide
-                    ? 'opacity-100 translate-y-0'
-                    : 'opacity-0 translate-y-8'
+                    ? 'opacity-100 translate-x-0 translate-y-0'
+                    : 'opacity-0 -translate-x-10 translate-y-4'
                 }`}
               >
                 <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl leading-tight">
@@ -96,10 +96,10 @@ const HeroSlider = () => {
 
               {/* Hero Image */}
               <div
-                className={`hidden lg:flex justify-center transition-all duration-1000 delay-500 ${
+                className={`hidden lg:flex justify-center transition-all duration-[900ms] ease-out delay-500 ${
                   index === currentSlide
-                    ? 'opacity-100 translate-x-0'
-                    : 'opacity-0 translate-x-12'
+                    ? 'opacity-100 translate-x-0 scale-100'
+                    : 'opacity-0 translate-x-16 scale-95'
                 }`}
               >
                 <img

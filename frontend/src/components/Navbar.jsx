@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Menu, X } from 'lucide-react';
 
+const BRAND_LOGO = 'https://res.cloudinary.com/db3cpuhrq/image/upload/v1774629759/IMG_1458__1_-removebg-preview_rrcajv.png';
+
 const navLinks = [
   { label: 'Home', path: '/' },
   { label: 'About', path: '/about' },
@@ -43,8 +45,8 @@ const Navbar = ({ onJoinClassClick }) => {
         <div className="flex items-center justify-between">
           {/* Logo */}
           <button onClick={() => handleNavClick('/')} className="flex items-center gap-2">
-            <span className="font-playball text-3xl text-white">Dance</span>
-            <span className="text-primary font-bold text-lg font-manrope">Academy</span>
+            <img src={BRAND_LOGO} alt="Laab Dance Academy logo" className="h-12 w-auto object-contain" />
+            <span className="text-white font-bold text-lg font-manrope hidden sm:inline">Laab Dance Academy</span>
           </button>
 
           {/* Desktop Menu */}

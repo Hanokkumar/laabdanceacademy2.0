@@ -1,35 +1,45 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { ChevronLeft, ChevronRight, Quote } from 'lucide-react';
-import { testimonials } from '../data/mockData';
-import useScrollAnimation from '../hooks/useScrollAnimation';
+import { testimonials as fallbackTestimonials } from '../data/mockData';
+import { useScrollReveal } from '../hooks/useScrollAnimation';
+import { useSiteContent } from '../hooks/useSiteContent';
+import { cn } from '../lib/utils';
 
 const TestimonialSection = () => {
-  const [ref, isVisible] = useScrollAnimation();
+  const [refHead, revealHead] = useScrollReveal('up');
+  const [refSlider, revealSlider] = useScrollReveal('left');
   const [current, setCurrent] = useState(0);
+  const { data } = useSiteContent();
+  const testimonials = useMemo(
+    () => (data?.testimonials?.length ? data.testimonials : fallbackTestimonials),
+    [data]
+  );
 
   const next = useCallback(() => {
+    if (!testimonials.length) return;
     setCurrent((prev) => (prev + 1) % testimonials.length);
-  }, []);
+  }, [testimonials.length]);
 
   const prev = useCallback(() => {
+    if (!testimonials.length) return;
     setCurrent((prev) => (prev - 1 + testimonials.length) % testimonials.length);
-  }, []);
+  }, [testimonials.length]);
 
   useEffect(() => {
+    setCurrent((c) => (testimonials.length ? Math.min(c, testimonials.length - 1) : 0));
+  }, [testimonials.length]);
+
+  useEffect(() => {
+    if (!testimonials.length) return undefined;
     const timer = setInterval(next, 5000);
     return () => clearInterval(timer);
-  }, [next]);
+  }, [next, testimonials.length]);
 
   return (
-    <section className="py-20 lg:py-28 bg-[#111]">
-      <div
-        ref={ref}
-        className={`max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 transition-all duration-1000 ${
-          isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'
-        }`}
-      >
+    <section className="py-20 lg:py-28 bg-[#111] overflow-hidden">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Heading */}
-        <div className="text-center mb-12">
+        <div ref={refHead} className={cn('text-center mb-12', revealHead)}>
           <div className="flex items-center justify-center gap-3 mb-3">
             <div className="w-10 h-[2px] bg-primary" />
             <span className="text-primary font-dm-sans text-sm uppercase tracking-widest">
@@ -46,7 +56,10 @@ const TestimonialSection = () => {
         </div>
 
         {/* Testimonial Slider */}
-        <div className="relative max-w-4xl mx-auto">
+        <div ref={refSlider} className={cn('relative max-w-4xl mx-auto', revealSlider)}>
+          {!testimonials.length ? (
+            <p className="text-center text-gray-400 font-dm-sans">No testimonials yet.</p>
+          ) : (
           <div className="overflow-hidden">
             {testimonials.map((t, index) => (
               <div
@@ -86,8 +99,10 @@ const TestimonialSection = () => {
               </div>
             ))}
           </div>
+          )}
 
           {/* Navigation */}
+          {testimonials.length > 0 && (
           <div className="flex items-center justify-center gap-4 mt-8">
             <button
               onClick={prev}
@@ -118,6 +133,7 @@ const TestimonialSection = () => {
               <ChevronRight size={18} />
             </button>
           </div>
+          )}
         </div>
       </div>
     </section>

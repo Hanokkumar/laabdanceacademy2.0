@@ -153,11 +153,12 @@ html {
 .stagger-5 { animation-delay: 0.5s; }
 .stagger-6 { animation-delay: 0.6s; }
 
-/* Scroll reveal base */
+/* Scroll reveal base (slide up) */
 .scroll-reveal {
   opacity: 0;
-  transform: translateY(30px);
-  transition: opacity 0.8s ease-out, transform 0.8s ease-out;
+  transform: translateY(40px);
+  transition: opacity 0.9s cubic-bezier(0.22, 1, 0.36, 1), transform 0.9s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: opacity, transform;
 }
 
 .scroll-reveal.visible {
@@ -165,10 +166,23 @@ html {
   transform: translateY(0);
 }
 
+.scroll-reveal-down {
+  opacity: 0;
+  transform: translateY(-36px);
+  transition: opacity 0.9s cubic-bezier(0.22, 1, 0.36, 1), transform 0.9s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: opacity, transform;
+}
+
+.scroll-reveal-down.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
 .scroll-reveal-left {
   opacity: 0;
-  transform: translateX(-40px);
-  transition: opacity 0.8s ease-out, transform 0.8s ease-out;
+  transform: translateX(-56px);
+  transition: opacity 0.9s cubic-bezier(0.22, 1, 0.36, 1), transform 0.9s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: opacity, transform;
 }
 
 .scroll-reveal-left.visible {
@@ -178,8 +192,9 @@ html {
 
 .scroll-reveal-right {
   opacity: 0;
-  transform: translateX(40px);
-  transition: opacity 0.8s ease-out, transform 0.8s ease-out;
+  transform: translateX(56px);
+  transition: opacity 0.9s cubic-bezier(0.22, 1, 0.36, 1), transform 0.9s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: opacity, transform;
 }
 
 .scroll-reveal-right.visible {
@@ -189,11 +204,112 @@ html {
 
 .scroll-reveal-scale {
   opacity: 0;
-  transform: scale(0.92);
-  transition: opacity 0.8s ease-out, transform 0.8s ease-out;
+  transform: scale(0.94);
+  transition: opacity 0.85s cubic-bezier(0.22, 1, 0.36, 1), transform 0.85s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: opacity, transform;
 }
 
 .scroll-reveal-scale.visible {
   opacity: 1;
   transform: scale(1);
+}
+
+/* Stagger children when any reveal parent is visible */
+.scroll-reveal.visible .reveal-stagger,
+.scroll-reveal-left.visible .reveal-stagger,
+.scroll-reveal-right.visible .reveal-stagger,
+.scroll-reveal-down.visible .reveal-stagger,
+.scroll-reveal-scale.visible .reveal-stagger {
+  opacity: 1;
+  transform: translateY(0) translateX(0);
+}
+
+.reveal-stagger {
+  opacity: 0;
+  transform: translateY(28px);
+  transition: opacity 0.65s cubic-bezier(0.22, 1, 0.36, 1), transform 0.65s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.scroll-reveal.visible .reveal-stagger:nth-child(1),
+.scroll-reveal-left.visible .reveal-stagger:nth-child(1),
+.scroll-reveal-right.visible .reveal-stagger:nth-child(1),
+.scroll-reveal-down.visible .reveal-stagger:nth-child(1),
+.scroll-reveal-scale.visible .reveal-stagger:nth-child(1) {
+  transition-delay: 0.05s;
+}
+.scroll-reveal.visible .reveal-stagger:nth-child(2),
+.scroll-reveal-left.visible .reveal-stagger:nth-child(2),
+.scroll-reveal-right.visible .reveal-stagger:nth-child(2),
+.scroll-reveal-down.visible .reveal-stagger:nth-child(2),
+.scroll-reveal-scale.visible .reveal-stagger:nth-child(2) {
+  transition-delay: 0.12s;
+}
+.scroll-reveal.visible .reveal-stagger:nth-child(3),
+.scroll-reveal-left.visible .reveal-stagger:nth-child(3),
+.scroll-reveal-right.visible .reveal-stagger:nth-child(3),
+.scroll-reveal-down.visible .reveal-stagger:nth-child(3),
+.scroll-reveal-scale.visible .reveal-stagger:nth-child(3) {
+  transition-delay: 0.19s;
+}
+.scroll-reveal.visible .reveal-stagger:nth-child(4),
+.scroll-reveal-left.visible .reveal-stagger:nth-child(4),
+.scroll-reveal-right.visible .reveal-stagger:nth-child(4),
+.scroll-reveal-down.visible .reveal-stagger:nth-child(4),
+.scroll-reveal-scale.visible .reveal-stagger:nth-child(4) {
+  transition-delay: 0.26s;
+}
+.scroll-reveal.visible .reveal-stagger:nth-child(5),
+.scroll-reveal-left.visible .reveal-stagger:nth-child(5),
+.scroll-reveal-right.visible .reveal-stagger:nth-child(5),
+.scroll-reveal-down.visible .reveal-stagger:nth-child(5),
+.scroll-reveal-scale.visible .reveal-stagger:nth-child(5) {
+  transition-delay: 0.33s;
+}
+.scroll-reveal.visible .reveal-stagger:nth-child(6),
+.scroll-reveal-left.visible .reveal-stagger:nth-child(6),
+.scroll-reveal-right.visible .reveal-stagger:nth-child(6),
+.scroll-reveal-down.visible .reveal-stagger:nth-child(6),
+.scroll-reveal-scale.visible .reveal-stagger:nth-child(6) {
+  transition-delay: 0.4s;
+}
+.scroll-reveal.visible .reveal-stagger:nth-child(7),
+.scroll-reveal-left.visible .reveal-stagger:nth-child(7),
+.scroll-reveal-right.visible .reveal-stagger:nth-child(7),
+.scroll-reveal-down.visible .reveal-stagger:nth-child(7),
+.scroll-reveal-scale.visible .reveal-stagger:nth-child(7) {
+  transition-delay: 0.47s;
+}
+.scroll-reveal.visible .reveal-stagger:nth-child(8),
+.scroll-reveal-left.visible .reveal-stagger:nth-child(8),
+.scroll-reveal-right.visible .reveal-stagger:nth-child(8),
+.scroll-reveal-down.visible .reveal-stagger:nth-child(8),
+.scroll-reveal-scale.visible .reveal-stagger:nth-child(8) {
+  transition-delay: 0.54s;
+}
+.scroll-reveal.visible .reveal-stagger:nth-child(9),
+.scroll-reveal-left.visible .reveal-stagger:nth-child(9),
+.scroll-reveal-right.visible .reveal-stagger:nth-child(9),
+.scroll-reveal-down.visible .reveal-stagger:nth-child(9),
+.scroll-reveal-scale.visible .reveal-stagger:nth-child(9) {
+  transition-delay: 0.61s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scroll-reveal,
+  .scroll-reveal-down,
+  .scroll-reveal-left,
+  .scroll-reveal-right,
+  .scroll-reveal-scale,
+  .reveal-stagger {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
+  .scroll-reveal.visible .reveal-stagger,
+  .scroll-reveal-left.visible .reveal-stagger,
+  .scroll-reveal-right.visible .reveal-stagger,
+  .scroll-reveal-down.visible .reveal-stagger,
+  .scroll-reveal-scale.visible .reveal-stagger {
+    transition-delay: 0s !important;
+  }
 }

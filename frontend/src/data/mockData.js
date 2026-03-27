@@ -12,7 +12,7 @@ export const navLinks = [
 export const heroSlides = [
   {
     id: 1,
-    title: 'Dance',
+    title: 'Laab Dance',
     titleAccent: 'Academy',
     description: 'Step into the rhythm of pure excellence. Discover world-class training, inspiring choreography, and a vibrant community that moves with purpose and heart.',
     image: `${BASE_IMG}/2025/02/bnr-main-2.png`,
@@ -125,17 +125,8 @@ export const events = [
   },
 ];
 
-export const galleryImages = [
-  `${BASE_IMG}/2025/01/g-1-1.jpg`,
-  `${BASE_IMG}/2025/01/g-2-1.jpg`,
-  `${BASE_IMG}/2025/01/g-3-1.jpg`,
-  `${BASE_IMG}/2025/01/g-4-1.jpg`,
-  `${BASE_IMG}/2025/01/g-5-1.jpg`,
-  `${BASE_IMG}/2025/01/g-6-1.jpg`,
-  `${BASE_IMG}/2025/01/g-7-1.jpg`,
-  `${BASE_IMG}/2025/01/g-8-1.jpg`,
-  `${BASE_IMG}/2025/01/g-9-1.jpg`,
-];
+/** @deprecated Gallery is loaded from CMS API (`/api/site-content` → galleryImages). Kept empty for legacy imports. */
+export const galleryImages = [];
 
 export const instructors = [
   {

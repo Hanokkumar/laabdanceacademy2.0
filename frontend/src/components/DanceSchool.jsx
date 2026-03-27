@@ -1,26 +1,35 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { danceSchoolCategories, danceSchoolItems } from '../data/mockData';
-import useScrollAnimation from '../hooks/useScrollAnimation';
+import { useScrollReveal } from '../hooks/useScrollAnimation';
+import { useSiteContent } from '../hooks/useSiteContent';
+import { cn } from '../lib/utils';
 
 const DanceSchool = () => {
   const [activeFilter, setActiveFilter] = useState('All');
-  const [ref, isVisible] = useScrollAnimation();
+  const [refHead, revealHead] = useScrollReveal('up');
+  const [refSide, revealSide] = useScrollReveal('left');
+  const [refGrid, revealGrid] = useScrollReveal('right');
+  const { data } = useSiteContent();
+
+  const categories = useMemo(
+    () => (data?.danceSchoolCategories?.length ? data.danceSchoolCategories : danceSchoolCategories),
+    [data]
+  );
+  const schoolItems = useMemo(
+    () => (data?.danceSchoolItems?.length ? data.danceSchoolItems : danceSchoolItems),
+    [data]
+  );
 
   const filteredItems =
     activeFilter === 'All'
-      ? danceSchoolItems
-      : danceSchoolItems.filter((item) => item.tags.includes(activeFilter));
+      ? schoolItems
+      : schoolItems.filter((item) => (item.tags || []).includes(activeFilter));
 
   return (
-    <section id="classes" className="py-20 lg:py-28 bg-[#f5f5f5]">
-      <div
-        ref={ref}
-        className={`max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 transition-all duration-1000 ${
-          isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'
-        }`}
-      >
+    <section id="classes" className="py-20 lg:py-28 bg-[#f5f5f5] overflow-hidden">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Heading */}
-        <div className="text-center mb-12">
+        <div ref={refHead} className={cn('text-center mb-12', revealHead)}>
           <div className="flex items-center justify-center gap-3 mb-3">
             <div className="w-10 h-[2px] bg-primary" />
             <span className="text-primary font-dm-sans text-sm uppercase tracking-widest">
@@ -38,9 +47,9 @@ const DanceSchool = () => {
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           {/* Filter Tabs */}
-          <div className="lg:col-span-1">
+          <div ref={refSide} className={cn('lg:col-span-1', revealSide)}>
             <div className="flex lg:flex-col flex-wrap gap-2">
-              {danceSchoolCategories.map((cat) => (
+              {categories.map((cat) => (
                 <button
                   key={cat}
                   onClick={() => setActiveFilter(cat)}
@@ -57,12 +66,12 @@ const DanceSchool = () => {
           </div>
 
           {/* Gallery Grid */}
-          <div className="lg:col-span-3">
+          <div ref={refGrid} className={cn('lg:col-span-3', revealGrid)}>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
               {filteredItems.map((item) => (
                 <div
                   key={item.id}
-                  className="group relative overflow-hidden rounded-lg cursor-pointer"
+                  className="group relative overflow-hidden rounded-lg cursor-pointer reveal-stagger"
                 >
                   <img
                     src={item.image}

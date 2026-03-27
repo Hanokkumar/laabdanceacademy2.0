@@ -1,21 +1,19 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { ZoomIn } from 'lucide-react';
-import { galleryImages } from '../data/mockData';
-import useScrollAnimation from '../hooks/useScrollAnimation';
+import { useScrollReveal } from '../hooks/useScrollAnimation';
+import { useSiteContent } from '../hooks/useSiteContent';
+import { cn } from '../lib/utils';
 
 const GallerySection = () => {
-  const [ref, isVisible] = useScrollAnimation();
+  const [ref, reveal] = useScrollReveal('right');
   const [lightboxImage, setLightboxImage] = useState(null);
+  const { data } = useSiteContent();
+  const galleryImages = useMemo(() => data?.galleryImages ?? [], [data]);
 
   return (
     <>
-      <section className="py-20 lg:py-28 bg-[#111]">
-        <div
-          ref={ref}
-          className={`max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 transition-all duration-1000 ${
-            isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'
-          }`}
-        >
+      <section className="py-20 lg:py-28 bg-[#111] overflow-hidden">
+        <div ref={ref} className={cn('max-w-7xl mx-auto px-4 sm:px-6 lg:px-8', reveal)}>
           {/* Heading */}
           <div className="text-center mb-12">
             <div className="flex items-center justify-center gap-3 mb-3">
@@ -31,13 +29,18 @@ const GallerySection = () => {
           </div>
 
           {/* Gallery Grid - Masonry Style */}
+          {galleryImages.length === 0 ? (
+            <p className="text-center text-gray-400 font-dm-sans py-12">
+              Gallery images will appear here once added in the admin panel.
+            </p>
+          ) : (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
             {galleryImages.map((img, index) => {
               const isLarge = index === 0 || index === 4;
               return (
                 <div
-                  key={index}
-                  className={`group relative overflow-hidden rounded-lg cursor-pointer ${
+                  key={`${img}-${index}`}
+                  className={`group relative overflow-hidden rounded-lg cursor-pointer reveal-stagger ${
                     isLarge ? 'row-span-2' : ''
                   }`}
                   onClick={() => setLightboxImage(img)}
@@ -58,6 +61,7 @@ const GallerySection = () => {
               );
             })}
           </div>
+          )}
         </div>
       </section>
 

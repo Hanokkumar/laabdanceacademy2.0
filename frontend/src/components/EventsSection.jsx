@@ -1,14 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { MapPin } from 'lucide-react';
 import { events as mockEvents } from '../data/mockData';
-import useScrollAnimation from '../hooks/useScrollAnimation';
+import { useScrollReveal } from '../hooks/useScrollAnimation';
 import axios from 'axios';
+import { cn } from '../lib/utils';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
+const isVideoUrl = (url = '') => /\.(mp4|webm|mov)(\?.*)?$/i.test(url);
 
 const EventsSection = () => {
-  const [ref, isVisible] = useScrollAnimation();
+  const [refHead, revealHead] = useScrollReveal('up');
+  const [refGrid, revealGrid] = useScrollReveal('up', 0.1, '0px 0px -5% 0px');
   const [events, setEvents] = useState([]);
 
   useEffect(() => {
@@ -34,15 +37,10 @@ const EventsSection = () => {
   };
 
   return (
-    <section id="events" className="py-20 lg:py-28 bg-white">
-      <div
-        ref={ref}
-        className={`max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 transition-all duration-1000 ${
-          isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'
-        }`}
-      >
+    <section id="events" className="py-20 lg:py-28 bg-white overflow-hidden">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Heading */}
-        <div className="text-center mb-12">
+        <div ref={refHead} className={cn('text-center mb-12', revealHead)}>
           <div className="flex items-center justify-center gap-3 mb-3">
             <div className="w-10 h-[2px] bg-primary" />
             <span className="text-primary font-dm-sans text-sm uppercase tracking-widest">
@@ -59,20 +57,30 @@ const EventsSection = () => {
         </div>
 
         {/* Events Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {events.map((event, index) => (
+        <div ref={refGrid} className={cn('grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6', revealGrid)}>
+          {events.map((event) => (
             <div
               key={event.id}
-              className="group bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-500"
-              style={{ transitionDelay: `${index * 100}ms` }}
+              className="group bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-xl transition-shadow duration-500 reveal-stagger"
             >
               {/* Image */}
               <div className="relative overflow-hidden">
-                <img
-                  src={getImageUrl(event.image)}
-                  alt={event.title}
-                  className="w-full h-56 object-cover transition-transform duration-500 group-hover:scale-110"
-                />
+                {isVideoUrl(getImageUrl(event.image)) ? (
+                  <video
+                    src={getImageUrl(event.image)}
+                    className="w-full h-56 object-cover transition-transform duration-500 group-hover:scale-110"
+                    controls
+                    preload="metadata"
+                  />
+                ) : (
+                  <img
+                    src={getImageUrl(event.image)}
+                    alt={event.title}
+                    loading="lazy"
+                    decoding="async"
+                    className="w-full h-56 object-cover transition-transform duration-500 group-hover:scale-110"
+                  />
+                )}
                 {/* Date Badge */}
                 <div className="absolute top-4 left-4 bg-primary text-white rounded-lg px-3 py-2 text-center">
                   <span className="block text-2xl font-bold font-manrope leading-none">

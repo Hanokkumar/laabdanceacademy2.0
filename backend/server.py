@@ -1,6 +1,5 @@
 from fastapi import FastAPI, APIRouter, HTTPException, Depends, UploadFile, File, Form
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from fastapi.staticfiles import StaticFiles
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -8,7 +7,7 @@ import os
 import logging
 from pathlib import Path
 from pydantic import BaseModel, Field
-from typing import List, Optional
+from typing import List, Optional, Dict
 import uuid
 from datetime import datetime, timezone, timedelta
 import aiosmtplib
@@ -16,6 +15,22 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from jose import jwt, JWTError
 import shutil
+from io import BytesIO
+from PIL import Image
+import asyncio
+
+try:
+    from pillow_heif import register_heif_opener
+
+    register_heif_opener()
+except ImportError:
+    pass
+import re
+from urllib.parse import urlparse, unquote
+import cloudinary
+import cloudinary.uploader
+
+from .site_content import init_site_content, register_site_content_routes, seed_mongo_if_empty
 
 
 ROOT_DIR = Path(__file__).parent
@@ -23,8 +38,12 @@ load_dotenv(ROOT_DIR / '.env')
 
 # MongoDB connection
 mongo_url = os.environ['MONGO_URL']
-client = AsyncIOMotorClient(mongo_url)
+client = AsyncIOMotorClient(mongo_url, serverSelectionTimeoutMS=2000)
 db = client[os.environ['DB_NAME']]
+MONGO_AVAILABLE = False
+
+# Fallback store to keep admin event management working without MongoDB.
+in_memory_events: Dict[str, dict] = {}
 
 # SMTP configuration
 SMTP_HOST = os.environ.get('SMTP_HOST', 'smtp.gmail.com')
@@ -40,9 +59,27 @@ JWT_EXPIRATION_HOURS = 24
 ADMIN_USERNAME = os.environ.get('ADMIN_USERNAME', 'admin')
 ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD', 'admin123')
 
-# Upload config
-UPLOAD_DIR = ROOT_DIR / 'uploads'
-UPLOAD_DIR.mkdir(exist_ok=True)
+# Cloudinary config
+CLOUDINARY_URL = os.environ.get("CLOUDINARY_URL", "")
+if CLOUDINARY_URL:
+    try:
+        parsed = urlparse(CLOUDINARY_URL)
+        cloudinary.config(
+            cloud_name=parsed.hostname,
+            api_key=unquote(parsed.username or ""),
+            api_secret=unquote(parsed.password or ""),
+            secure=True,
+        )
+    except Exception as e:
+        logging.getLogger(__name__).warning(f"Failed to parse CLOUDINARY_URL: {str(e)}")
+        cloudinary.config(cloudinary_url=CLOUDINARY_URL, secure=True)
+else:
+    cloudinary.config(
+        cloud_name=os.environ.get("CLOUDINARY_CLOUD_NAME", ""),
+        api_key=os.environ.get("CLOUDINARY_API_KEY", ""),
+        api_secret=os.environ.get("CLOUDINARY_API_SECRET", ""),
+        secure=True,
+    )
 
 # Create the main app
 app = FastAPI()
@@ -181,17 +218,90 @@ async def verify_admin(username: str = Depends(verify_token)):
     return {"valid": True, "username": username}
 
 
+def _normalize_upload_content_type(upload: UploadFile) -> str:
+    """Browsers sometimes omit MIME or send octet-stream for HEIC/HEIF."""
+    ct = (upload.content_type or "").strip().lower()
+    fn = (upload.filename or "").lower()
+    if ct in ("", "application/octet-stream", "binary/octet-stream"):
+        if fn.endswith(".heic"):
+            return "image/heic"
+        if fn.endswith(".heif"):
+            return "image/heif"
+    return ct or "application/octet-stream"
+
+
+def extract_cloudinary_public_id(url: str) -> Optional[str]:
+    if "res.cloudinary.com" not in url:
+        return None
+    # Example URL:
+    # https://res.cloudinary.com/<cloud>/image/upload/v123456/events/abc.webp
+    match = re.search(r"/upload/(?:v\d+/)?(.+)$", url)
+    if not match:
+        return None
+    public_with_ext = match.group(1).split("?")[0]
+    public_id = re.sub(r"\.[^./]+$", "", public_with_ext)
+    return public_id
+
+
+def _compress_image_bytes_for_cloudinary(
+    contents: bytes,
+    *,
+    max_side: Optional[int] = None,
+    quality: Optional[int] = None,
+) -> bytes:
+    """
+    Resize and re-encode raster images before Cloudinary (smaller bills than uploading originals).
+    GIF uses first frame only; output is WebP.
+    """
+    max_side = max_side or int(os.environ.get("IMAGE_UPLOAD_MAX_SIDE", "1280"))
+    quality = quality or int(os.environ.get("IMAGE_UPLOAD_WEBP_QUALITY", "72"))
+    max_side = max(320, min(max_side, 4096))
+    quality = max(30, min(quality, 95))
+
+    with Image.open(BytesIO(contents)) as img:
+        if getattr(img, "is_animated", False):
+            img.seek(0)
+        if img.mode in ("RGBA", "LA"):
+            img = img.convert("RGBA")
+        elif img.mode == "P" and "transparency" in img.info:
+            img = img.convert("RGBA")
+        elif img.mode not in ("RGB", "L"):
+            img = img.convert("RGB")
+        if img.mode == "L":
+            img = img.convert("RGB")
+
+        img.thumbnail((max_side, max_side), Image.Resampling.LANCZOS)
+        buf = BytesIO()
+        img.save(buf, format="WEBP", quality=quality, method=6)
+        return buf.getvalue()
+
+
+async def delete_cloudinary_asset_by_url(url: str):
+    public_id = extract_cloudinary_public_id(url)
+    if not public_id:
+        return
+    # Try image first, then video.
+    await asyncio.to_thread(cloudinary.uploader.destroy, public_id, resource_type="image", invalidate=True)
+    await asyncio.to_thread(cloudinary.uploader.destroy, public_id, resource_type="video", invalidate=True)
+
+
 # ===== EVENT ROUTES =====
 
 @api_router.get("/events", response_model=List[EventResponse])
 async def get_events():
-    events = await db.events.find({}, {"_id": 0}).sort("created_at", -1).to_list(100)
+    if MONGO_AVAILABLE:
+        events = await db.events.find({}, {"_id": 0}).sort("created_at", -1).to_list(100)
+        return events
+    events = sorted(in_memory_events.values(), key=lambda e: e["created_at"], reverse=True)
     return events
 
 
 @api_router.get("/events/{event_id}", response_model=EventResponse)
 async def get_event(event_id: str):
-    event = await db.events.find_one({"id": event_id}, {"_id": 0})
+    if MONGO_AVAILABLE:
+        event = await db.events.find_one({"id": event_id}, {"_id": 0})
+    else:
+        event = in_memory_events.get(event_id)
     if not event:
         raise HTTPException(status_code=404, detail="Event not found")
     return event
@@ -214,7 +324,10 @@ async def create_event(event: EventCreate, username: str = Depends(verify_token)
         "created_at": now,
         "updated_at": now,
     }
-    await db.events.insert_one(event_doc)
+    if MONGO_AVAILABLE:
+        await db.events.insert_one(event_doc)
+    else:
+        in_memory_events[event_doc["id"]] = event_doc
     event_doc.pop("_id", None)
     logger.info(f"Event created: {event_doc['title']}")
     return event_doc
@@ -222,33 +335,68 @@ async def create_event(event: EventCreate, username: str = Depends(verify_token)
 
 @api_router.put("/events/{event_id}", response_model=EventResponse)
 async def update_event(event_id: str, event: EventUpdate, username: str = Depends(verify_token)):
-    existing = await db.events.find_one({"id": event_id})
+    if MONGO_AVAILABLE:
+        existing = await db.events.find_one({"id": event_id})
+    else:
+        existing = in_memory_events.get(event_id)
     if not existing:
-        raise HTTPException(status_code=404, detail="Event not found")
+        if MONGO_AVAILABLE:
+            raise HTTPException(status_code=404, detail="Event not found")
+        # Fallback mode: treat update as upsert so edits keep working
+        # even after backend restarts without MongoDB persistence.
+        now = datetime.now(timezone.utc).isoformat()
+        new_event = {
+            "id": event_id,
+            "title": event.title or "Untitled Event",
+            "description": event.description or "",
+            "date": event.date or "",
+            "month": event.month or "",
+            "year": event.year or str(datetime.now().year),
+            "location": event.location or "",
+            "price": event.price or "",
+            "image": event.image or "",
+            "full_date": event.full_date or "",
+            "created_at": now,
+            "updated_at": now,
+        }
+        in_memory_events[event_id] = new_event
+        logger.info(f"Event upserted in fallback mode: {event_id}")
+        return new_event
 
     update_data = {k: v for k, v in event.model_dump().items() if v is not None}
     update_data["updated_at"] = datetime.now(timezone.utc).isoformat()
 
-    await db.events.update_one({"id": event_id}, {"$set": update_data})
-    updated = await db.events.find_one({"id": event_id}, {"_id": 0})
+    if MONGO_AVAILABLE:
+        await db.events.update_one({"id": event_id}, {"$set": update_data})
+        updated = await db.events.find_one({"id": event_id}, {"_id": 0})
+    else:
+        existing.update(update_data)
+        in_memory_events[event_id] = existing
+        updated = existing
     logger.info(f"Event updated: {event_id}")
     return updated
 
 
 @api_router.delete("/events/{event_id}")
 async def delete_event(event_id: str, username: str = Depends(verify_token)):
-    existing = await db.events.find_one({"id": event_id})
+    if MONGO_AVAILABLE:
+        existing = await db.events.find_one({"id": event_id})
+    else:
+        existing = in_memory_events.get(event_id)
     if not existing:
         raise HTTPException(status_code=404, detail="Event not found")
 
-    # Delete associated image if exists
-    if existing.get("image") and existing["image"].startswith("/api/uploads/"):
-        filename = existing["image"].split("/")[-1]
-        filepath = UPLOAD_DIR / filename
-        if filepath.exists():
-            filepath.unlink()
+    # Delete associated asset from Cloudinary if exists.
+    if existing.get("image"):
+        try:
+            await delete_cloudinary_asset_by_url(existing["image"])
+        except Exception as e:
+            logger.warning(f"Failed to remove Cloudinary asset for event {event_id}: {str(e)}")
 
-    await db.events.delete_one({"id": event_id})
+    if MONGO_AVAILABLE:
+        await db.events.delete_one({"id": event_id})
+    else:
+        in_memory_events.pop(event_id, None)
     logger.info(f"Event deleted: {event_id}")
     return {"success": True, "message": "Event deleted successfully"}
 
@@ -256,37 +404,117 @@ async def delete_event(event_id: str, username: str = Depends(verify_token)):
 # ===== UPLOAD ROUTES =====
 
 @api_router.post("/upload")
-async def upload_image(file: UploadFile = File(...), username: str = Depends(verify_token)):
+async def upload_image(
+    file: UploadFile = File(...),
+    folder: str = Form("events"),
+    username: str = Depends(verify_token),
+):
+    cld_cfg = cloudinary.config()
+    if not cld_cfg.api_key or not cld_cfg.api_secret or not cld_cfg.cloud_name:
+        raise HTTPException(status_code=500, detail="Cloudinary is not configured on server")
+
+    content_type = _normalize_upload_content_type(file)
+
     # Validate file type
-    allowed_types = ["image/jpeg", "image/png", "image/gif", "image/webp"]
-    if file.content_type not in allowed_types:
-        raise HTTPException(status_code=400, detail="Invalid file type. Allowed: JPEG, PNG, GIF, WebP")
+    allowed_types = [
+        "image/jpeg", "image/png", "image/gif", "image/webp",
+        "image/heic", "image/heif",
+        "video/mp4", "video/webm", "video/quicktime",
+    ]
+    if content_type not in allowed_types:
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid file type. Allowed: JPEG, PNG, GIF, WebP, HEIC/HEIF, MP4, WEBM, MOV",
+        )
 
-    # Limit file size (10MB)
     contents = await file.read()
-    if len(contents) > 10 * 1024 * 1024:
-        raise HTTPException(status_code=400, detail="File too large. Max: 10MB")
 
-    # Generate unique filename
-    ext = file.filename.split(".")[-1] if "." in file.filename else "jpg"
-    filename = f"{uuid.uuid4()}.{ext}"
-    filepath = UPLOAD_DIR / filename
+    is_image = content_type.startswith("image/")
+    if is_image:
+        # Allow larger *original* images; we compress before Cloudinary.
+        max_raw_mb = float(os.environ.get("UPLOAD_MAX_IMAGE_RAW_MB", "30"))
+        max_raw_bytes = int(max_raw_mb * 1024 * 1024)
+    else:
+        # Keep a conservative raw limit for videos.
+        max_raw_mb = float(os.environ.get("UPLOAD_MAX_VIDEO_RAW_MB", "10"))
+        max_raw_bytes = int(max_raw_mb * 1024 * 1024)
 
-    with open(filepath, "wb") as f:
-        f.write(contents)
+    if len(contents) > max_raw_bytes:
+        raise HTTPException(
+            status_code=400,
+            detail=f"File too large. Max: {max_raw_mb:g}MB",
+        )
 
-    image_url = f"/api/uploads/{filename}"
-    logger.info(f"Image uploaded: {filename}")
-    return {"success": True, "url": image_url, "filename": filename}
+    processed_contents = contents
+    if is_image:
+        # Target smaller payloads (KB/low-MB) before uploading to Cloudinary.
+        # If the first pass is still too big, we retry more aggressively.
+        max_processed_mb = float(os.environ.get("UPLOAD_MAX_IMAGE_PROCESSED_MB", "2"))
+        max_processed_bytes = int(max_processed_mb * 1024 * 1024)
+
+        try:
+            processed_contents = _compress_image_bytes_for_cloudinary(contents)
+
+            retry_passes = [
+                # (max_side, quality) - decreasing resolution + quality
+                (1024, 65),
+                (768, 55),
+                (512, 45),
+                (384, 35),
+            ]
+
+            if len(processed_contents) > max_processed_bytes:
+                for ms, q in retry_passes:
+                    processed_contents = _compress_image_bytes_for_cloudinary(
+                        contents,
+                        max_side=ms,
+                        quality=q,
+                    )
+                    if len(processed_contents) <= max_processed_bytes:
+                        break
+
+            logger.info(
+                "Compressed image before Cloudinary: %s bytes -> %s bytes (limit %s bytes)",
+                len(contents),
+                len(processed_contents),
+                max_processed_bytes,
+            )
+        except Exception as e:
+            logger.warning("Image compression failed, uploading raw bytes: %s", e)
+            processed_contents = contents
+
+        if len(processed_contents) > max_processed_bytes:
+            raise HTTPException(
+                status_code=400,
+                detail=f"File too large even after compression. Max: {max_processed_mb:g}MB",
+            )
+    resource_type = "video" if content_type.startswith("video/") else "image"
+    cld_folder = (folder or "events").strip().lower().replace("/", "").replace("\\", "")
+    if cld_folder not in ("events", "gallery"):
+        cld_folder = "events"
+    try:
+        upload_result = await asyncio.to_thread(
+            cloudinary.uploader.upload,
+            processed_contents,
+            folder=cld_folder,
+            resource_type=resource_type,
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Cloudinary upload failed: {str(e)}")
+    media_url = upload_result.get("secure_url")
+    public_id = upload_result.get("public_id")
+    logger.info(f"Media uploaded to Cloudinary: {public_id}")
+    return {"success": True, "url": media_url, "public_id": public_id, "resource_type": resource_type}
 
 
-@api_router.delete("/uploads/{filename}")
-async def delete_upload(filename: str, username: str = Depends(verify_token)):
-    filepath = UPLOAD_DIR / filename
-    if not filepath.exists():
-        raise HTTPException(status_code=404, detail="File not found")
-    filepath.unlink()
-    return {"success": True, "message": "File deleted"}
+@api_router.delete("/uploads/{asset_path:path}")
+async def delete_upload(asset_path: str, username: str = Depends(verify_token)):
+    if not CLOUDINARY_URL:
+        raise HTTPException(status_code=500, detail="Cloudinary is not configured on server")
+    public_id = re.sub(r"\.[^./]+$", "", asset_path)
+    await asyncio.to_thread(cloudinary.uploader.destroy, public_id, resource_type="image", invalidate=True)
+    await asyncio.to_thread(cloudinary.uploader.destroy, public_id, resource_type="video", invalidate=True)
+    return {"success": True, "message": "Cloudinary asset deleted"}
 
 
 # ===== FORM ROUTES =====
@@ -364,11 +592,10 @@ async def root():
     return {"message": "Dance Academy API"}
 
 
+register_site_content_routes(api_router, verify_token)
+
 # Include the router
 app.include_router(api_router)
-
-# Serve uploaded files
-app.mount("/api/uploads", StaticFiles(directory=str(UPLOAD_DIR)), name="uploads")
 
 app.add_middleware(
     CORSMiddleware,
@@ -378,12 +605,37 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Create indexes on startup
+# Create indexes on startup (Mongo availability is decided by ping, not index creation)
 @app.on_event("startup")
 async def startup_db():
-    await db.events.create_index("id", unique=True)
-    await db.events.create_index("created_at")
-    logger.info("Database indexes created")
+    global MONGO_AVAILABLE
+    MONGO_AVAILABLE = False
+    try:
+        await client.admin.command("ping")
+        MONGO_AVAILABLE = True
+        logger.info("MongoDB ping OK")
+    except Exception as e:
+        logger.warning(
+            "MongoDB unreachable on startup. CMS data (including gallery) will use in-memory storage "
+            "and will reset when the server restarts — uploads still go to Cloudinary. Fix MONGO_URL/DB. Error: %s",
+            str(e),
+        )
+
+    if MONGO_AVAILABLE:
+        try:
+            await db.events.create_index("id", unique=True)
+            await db.events.create_index("created_at")
+            for coll in ("dance_school_items", "gallery_items", "instructors", "blog_posts", "testimonials"):
+                try:
+                    await db[coll].create_index("id", unique=True)
+                except Exception:
+                    pass
+            logger.info("Database indexes created")
+        except Exception as e:
+            logger.warning("Index creation warning (continuing): %s", str(e))
+
+    init_site_content(db, MONGO_AVAILABLE)
+    await seed_mongo_if_empty()
 
 @app.on_event("shutdown")
 async def shutdown_db_client():

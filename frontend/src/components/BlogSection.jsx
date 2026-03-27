@@ -1,21 +1,24 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Calendar, Tag } from 'lucide-react';
-import { blogPosts } from '../data/mockData';
-import useScrollAnimation from '../hooks/useScrollAnimation';
+import { blogPosts as fallbackBlog } from '../data/mockData';
+import { useScrollReveal } from '../hooks/useScrollAnimation';
+import { useSiteContent } from '../hooks/useSiteContent';
+import { cn } from '../lib/utils';
 
 const BlogSection = () => {
-  const [ref, isVisible] = useScrollAnimation();
+  const [refHead, revealHead] = useScrollReveal('up');
+  const [refGrid, revealGrid] = useScrollReveal('left');
+  const { data } = useSiteContent();
+  const blogPosts = useMemo(
+    () => (data?.blogPosts?.length ? data.blogPosts : fallbackBlog),
+    [data]
+  );
 
   return (
-    <section id="blog" className="py-20 lg:py-28 bg-white">
-      <div
-        ref={ref}
-        className={`max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 transition-all duration-1000 ${
-          isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'
-        }`}
-      >
+    <section id="blog" className="py-20 lg:py-28 bg-white overflow-hidden">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Heading */}
-        <div className="text-center mb-12">
+        <div ref={refHead} className={cn('text-center mb-12', revealHead)}>
           <div className="flex items-center justify-center gap-3 mb-3">
             <div className="w-10 h-[2px] bg-primary" />
             <span className="text-primary font-dm-sans text-sm uppercase tracking-widest">
@@ -32,12 +35,11 @@ const BlogSection = () => {
         </div>
 
         {/* Blog Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {blogPosts.map((post, index) => (
+        <div ref={refGrid} className={cn('grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6', revealGrid)}>
+          {blogPosts.map((post) => (
             <article
               key={post.id}
-              className="group bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-500 border border-gray-100"
-              style={{ transitionDelay: `${index * 100}ms` }}
+              className="group bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-xl transition-shadow duration-500 border border-gray-100 reveal-stagger"
             >
               {/* Image */}
               <div className="relative overflow-hidden">

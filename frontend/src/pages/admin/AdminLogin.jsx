@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { Lock, User, Loader2, AlertCircle } from 'lucide-react';
 
+const BRAND_LOGO = 'https://res.cloudinary.com/db3cpuhrq/image/upload/v1774629759/IMG_1458__1_-removebg-preview_rrcajv.png';
+
 const AdminLogin = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -30,8 +32,8 @@ const AdminLogin = () => {
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
-          <span className="font-playball text-4xl text-white">Dance</span>
-          <span className="text-primary font-bold text-xl font-manrope ml-2">Academy</span>
+          <img src={BRAND_LOGO} alt="Laab Dance Academy logo" className="h-16 w-auto object-contain mx-auto" />
+          <p className="text-white font-manrope font-bold text-lg mt-2">Laab Dance Academy</p>
           <p className="text-gray-400 font-dm-sans text-sm mt-2">Admin Panel</p>
         </div>
 

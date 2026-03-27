@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import { useDeferredImageUpload } from '../../hooks/useDeferredImageUpload';
+import { IMAGE_FILE_ACCEPT } from '../../utils/imageFiles';
 import axios from 'axios';
 import {
   ArrowLeft, Upload, X, Loader2, Save, Calendar,
@@ -9,6 +11,7 @@ import {
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
+const isVideoUrl = (url = '') => /\.(mp4|webm|mov)(\?.*)?$/i.test(url);
 
 const EventForm = () => {
   const { id } = useParams();
@@ -22,7 +25,14 @@ const EventForm = () => {
     year: new Date().getFullYear().toString(), location: '',
     price: '', image: '', full_date: '',
   });
-  const [imagePreview, setImagePreview] = useState(null);
+  const {
+    pendingFile,
+    originalSavedUrlRef,
+    onFileInputChange,
+    clearPending,
+    resetAll,
+    getDisplaySrc,
+  } = useDeferredImageUpload();
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(isEditing);
@@ -36,9 +46,7 @@ const EventForm = () => {
         try {
           const res = await axios.get(`${API}/events/${id}`);
           setFormData(res.data);
-          if (res.data.image) {
-            setImagePreview(res.data.image.startsWith('http') ? res.data.image : `${BACKEND_URL}${res.data.image}`);
-          }
+          originalSavedUrlRef.current = res.data.image || '';
         } catch (err) {
           setError('Failed to load event');
         } finally {
@@ -54,38 +62,14 @@ const EventForm = () => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleImageUpload = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    // Preview
-    const reader = new FileReader();
-    reader.onload = (ev) => setImagePreview(ev.target.result);
-    reader.readAsDataURL(file);
-
-    // Upload
-    setUploading(true);
-    try {
-      const fd = new FormData();
-      fd.append('file', file);
-      const res = await axios.post(`${API}/upload`, fd, {
-        ...getAuthHeaders(),
-        headers: {
-          ...getAuthHeaders().headers,
-          'Content-Type': 'multipart/form-data',
-        },
-      });
-      setFormData((prev) => ({ ...prev, image: res.data.url }));
-    } catch (err) {
-      setError('Failed to upload image');
-    } finally {
-      setUploading(false);
-    }
+  const handleMediaFileSelect = (e) => {
+    onFileInputChange(e);
+    setError('');
   };
 
   const removeImage = () => {
-    setImagePreview(null);
-    setFormData((prev) => ({ ...prev, image: '' }));
+    clearPending();
+    setFormData((prev) => ({ ...prev, image: isEditing ? originalSavedUrlRef.current || '' : '' }));
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
@@ -95,18 +79,49 @@ const EventForm = () => {
     setError('');
 
     try {
-      if (isEditing) {
-        await axios.put(`${API}/events/${id}`, formData, getAuthHeaders());
-      } else {
-        await axios.post(`${API}/events`, formData, getAuthHeaders());
+      let imageUrl = formData.image;
+      if (pendingFile) {
+        setUploading(true);
+        try {
+          const fd = new FormData();
+          fd.append('file', pendingFile);
+          const res = await axios.post(`${API}/upload`, fd, {
+            ...getAuthHeaders(),
+            headers: {
+              ...getAuthHeaders().headers,
+              'Content-Type': 'multipart/form-data',
+            },
+          });
+          imageUrl = res.data.url;
+        } catch (err) {
+          setError(err.response?.data?.detail || 'Failed to upload media');
+          setSaving(false);
+          setUploading(false);
+          return;
+        } finally {
+          setUploading(false);
+        }
       }
-      navigate('/admin');
+
+      const payload = { ...formData, image: imageUrl };
+      if (isEditing) {
+        await axios.put(`${API}/events/${id}`, payload, getAuthHeaders());
+      } else {
+        await axios.post(`${API}/events`, payload, getAuthHeaders());
+      }
+      resetAll();
+      navigate('/admin/events');
     } catch (err) {
       setError(err.response?.data?.detail || 'Failed to save event');
     } finally {
       setSaving(false);
     }
   };
+
+  const displayMediaUrl = getDisplaySrc(formData.image, BACKEND_URL);
+  const isPreviewVideo =
+    pendingFile?.type?.startsWith('video/') ||
+    (displayMediaUrl && isVideoUrl(displayMediaUrl));
 
   if (loading) {
     return (
@@ -124,7 +139,7 @@ const EventForm = () => {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <button
-                onClick={() => navigate('/admin')}
+                onClick={() => navigate('/admin/events')}
                 className="text-gray-400 hover:text-white transition-colors"
               >
                 <ArrowLeft size={20} />
@@ -190,9 +205,13 @@ const EventForm = () => {
                   Event Image
                 </h3>
 
-                {imagePreview ? (
+                {displayMediaUrl ? (
                   <div className="relative rounded-lg overflow-hidden">
-                    <img src={imagePreview} alt="Preview" className="w-full h-56 object-cover rounded-lg" />
+                    {isPreviewVideo ? (
+                      <video src={displayMediaUrl} controls className="w-full h-56 object-cover rounded-lg" />
+                    ) : (
+                      <img src={displayMediaUrl} alt="Preview" className="w-full h-56 object-cover rounded-lg" />
+                    )}
                     <button
                       type="button" onClick={removeImage}
                       className="absolute top-3 right-3 w-8 h-8 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 transition-colors"
@@ -211,12 +230,15 @@ const EventForm = () => {
                     className="border-2 border-dashed border-gray-200 rounded-lg p-8 text-center cursor-pointer hover:border-primary/40 transition-colors"
                   >
                     <Upload size={32} className="text-gray-300 mx-auto mb-3" />
-                    <p className="text-gray-500 font-dm-sans text-sm">Click to upload image</p>
-                    <p className="text-gray-400 font-dm-sans text-xs mt-1">JPEG, PNG, GIF, WebP (Max 10MB)</p>
+                    <p className="text-gray-500 font-dm-sans text-sm">Choose image or video — uploads to Cloudinary when you save</p>
+                    <p className="text-gray-400 font-dm-sans text-xs mt-1">JPEG, PNG, GIF, WebP, MP4, WEBM, MOV (Max 10MB)</p>
                   </div>
                 )}
                 <input
-                  ref={fileInputRef} type="file" accept="image/*" onChange={handleImageUpload}
+                  ref={fileInputRef}
+                  type="file"
+                  accept={`${IMAGE_FILE_ACCEPT},video/mp4,video/webm,video/quicktime`}
+                  onChange={handleMediaFileSelect}
                   className="hidden"
                 />
               </div>
@@ -297,7 +319,7 @@ const EventForm = () => {
                   {saving ? <><Loader2 size={18} className="animate-spin" /> Saving...</> : <><Save size={16} /> {isEditing ? 'Update Event' : 'Create Event'}</>}
                 </button>
                 <button
-                  type="button" onClick={() => navigate('/admin')}
+                  type="button" onClick={() => navigate('/admin/events')}
                   className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-manrope font-semibold py-3 rounded-lg text-sm transition-all"
                 >
                   Cancel

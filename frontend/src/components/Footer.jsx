@@ -6,6 +6,7 @@ import axios from 'axios';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
+const BRAND_LOGO = 'https://res.cloudinary.com/db3cpuhrq/image/upload/v1774629759/IMG_1458__1_-removebg-preview_rrcajv.png';
 
 const Footer = () => {
   const [email, setEmail] = useState('');
@@ -41,9 +42,9 @@ const Footer = () => {
           <div className="flex flex-col md:flex-row items-center justify-between gap-8">
             {/* Logo */}
             <div className="flex-shrink-0">
-              <a href="#home" className="flex items-center gap-2">
-                <span className="font-playball text-3xl text-white">Dance</span>
-                <span className="text-primary font-bold text-lg font-manrope">Academy</span>
+              <a href="#home" className="flex items-center gap-3">
+                <img src={BRAND_LOGO} alt="Laab Dance Academy logo" className="h-12 w-auto object-contain" />
+                <span className="text-white font-bold text-lg font-manrope">Laab Dance Academy</span>
               </a>
             </div>
 

@@ -11,7 +11,15 @@ import EventsPage from './pages/EventsPage';
 import BlogPage from './pages/BlogPage';
 import ContactPage from './pages/ContactPage';
 import AdminLogin from './pages/admin/AdminLogin';
-import AdminDashboard from './pages/admin/AdminDashboard';
+import AdminLayout from './pages/admin/AdminLayout';
+import AdminHome from './pages/admin/AdminHome';
+import AdminEventsPage from './pages/admin/AdminEventsPage';
+import AdminDanceSchool from './pages/admin/AdminDanceSchool';
+import AdminGallery from './pages/admin/AdminGallery';
+import AdminInstructors from './pages/admin/AdminInstructors';
+import AdminSchedule from './pages/admin/AdminSchedule';
+import AdminBlog from './pages/admin/AdminBlog';
+import AdminTestimonials from './pages/admin/AdminTestimonials';
 import EventForm from './pages/admin/EventForm';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { GraduationCap, Loader2 } from 'lucide-react';
@@ -57,9 +65,39 @@ const AppLayout = () => {
 
         {/* Admin Routes */}
         <Route path="/admin/login" element={<AdminLogin />} />
-        <Route path="/admin" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
-        <Route path="/admin/events/new" element={<ProtectedRoute><EventForm /></ProtectedRoute>} />
-        <Route path="/admin/events/:id/edit" element={<ProtectedRoute><EventForm /></ProtectedRoute>} />
+        <Route
+          path="/admin/events/new"
+          element={
+            <ProtectedRoute>
+              <EventForm />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/events/:id/edit"
+          element={
+            <ProtectedRoute>
+              <EventForm />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin"
+          element={
+            <ProtectedRoute>
+              <AdminLayout />
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<AdminHome />} />
+          <Route path="events" element={<AdminEventsPage />} />
+          <Route path="dance-school" element={<AdminDanceSchool />} />
+          <Route path="gallery" element={<AdminGallery />} />
+          <Route path="instructors" element={<AdminInstructors />} />
+          <Route path="schedule" element={<AdminSchedule />} />
+          <Route path="blog" element={<AdminBlog />} />
+          <Route path="testimonials" element={<AdminTestimonials />} />
+        </Route>
       </Routes>
 
       {!isAdminRoute && <Footer />}

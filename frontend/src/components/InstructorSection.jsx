@@ -1,10 +1,18 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Facebook, Instagram, Linkedin, Twitter } from 'lucide-react';
-import { instructors } from '../data/mockData';
-import useScrollAnimation from '../hooks/useScrollAnimation';
+import { instructors as fallbackInstructors } from '../data/mockData';
+import { useScrollReveal } from '../hooks/useScrollAnimation';
+import { useSiteContent } from '../hooks/useSiteContent';
+import { cn } from '../lib/utils';
 
 const InstructorSection = () => {
-  const [ref, isVisible] = useScrollAnimation();
+  const [refHead, revealHead] = useScrollReveal('up');
+  const [refGrid, revealGrid] = useScrollReveal('left');
+  const { data } = useSiteContent();
+  const instructors = useMemo(
+    () => (data?.instructors?.length ? data.instructors : fallbackInstructors),
+    [data]
+  );
 
   const socialIcons = [
     { Icon: Facebook, key: 'facebook' },
@@ -14,15 +22,10 @@ const InstructorSection = () => {
   ];
 
   return (
-    <section className="py-20 lg:py-28 bg-white">
-      <div
-        ref={ref}
-        className={`max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 transition-all duration-1000 ${
-          isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'
-        }`}
-      >
+    <section className="py-20 lg:py-28 bg-white overflow-hidden">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Heading */}
-        <div className="text-center mb-12">
+        <div ref={refHead} className={cn('text-center mb-12', revealHead)}>
           <div className="flex items-center justify-center gap-3 mb-3">
             <div className="w-10 h-[2px] bg-primary" />
             <span className="text-primary font-dm-sans text-sm uppercase tracking-widest">
@@ -39,12 +42,11 @@ const InstructorSection = () => {
         </div>
 
         {/* Instructors Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {instructors.map((instructor, index) => (
+        <div ref={refGrid} className={cn('grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6', revealGrid)}>
+          {instructors.map((instructor) => (
             <div
               key={instructor.id}
-              className="group text-center"
-              style={{ transitionDelay: `${index * 100}ms` }}
+              className="group text-center reveal-stagger"
             >
               {/* Image */}
               <div className="relative overflow-hidden rounded-xl bg-[#f5f5f5]">
@@ -59,7 +61,7 @@ const InstructorSection = () => {
                     {socialIcons.map(({ Icon, key }) => (
                       <a
                         key={key}
-                        href={instructor.socials[key]}
+                        href={instructor.socials?.[key] || '#'}
                         className="w-9 h-9 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center text-white hover:bg-primary hover:text-white transition-all duration-300"
                         aria-label={key}
                       >

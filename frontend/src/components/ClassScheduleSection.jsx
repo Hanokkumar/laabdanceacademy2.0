@@ -1,23 +1,26 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Calendar, Tag } from 'lucide-react';
-import { classSchedule } from '../data/mockData';
-import useScrollAnimation from '../hooks/useScrollAnimation';
+import { classSchedule as fallbackSchedule } from '../data/mockData';
+import { useScrollReveal } from '../hooks/useScrollAnimation';
+import { useSiteContent } from '../hooks/useSiteContent';
+import { cn } from '../lib/utils';
 
 const ClassScheduleSection = () => {
-  const [ref, isVisible] = useScrollAnimation();
+  const [refHead, revealHead] = useScrollReveal('up');
+  const [refTable, revealTable] = useScrollReveal('right');
+  const { data } = useSiteContent();
+  const classSchedule = useMemo(
+    () => (data?.classSchedule?.length ? data.classSchedule : fallbackSchedule),
+    [data]
+  );
   const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
   const dayLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
   return (
-    <section className="py-20 lg:py-28 bg-[#f5f5f5]">
-      <div
-        ref={ref}
-        className={`max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 transition-all duration-1000 ${
-          isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'
-        }`}
-      >
+    <section className="py-20 lg:py-28 bg-[#f5f5f5] overflow-hidden">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Heading */}
-        <div className="text-center mb-12">
+        <div ref={refHead} className={cn('text-center mb-12', revealHead)}>
           <div className="flex items-center justify-center gap-3 mb-3">
             <div className="w-10 h-[2px] bg-primary" />
             <span className="text-primary font-dm-sans text-sm uppercase tracking-widest">
@@ -31,7 +34,7 @@ const ClassScheduleSection = () => {
         </div>
 
         {/* Schedule Table */}
-        <div className="overflow-x-auto">
+        <div ref={refTable} className={cn('overflow-x-auto', revealTable)}>
           <table className="w-full min-w-[700px]">
             <thead>
               <tr>
