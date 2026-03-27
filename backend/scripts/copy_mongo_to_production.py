@@ -26,6 +26,11 @@ Dry run (counts only):
   python backend/scripts/copy_mongo_to_production.py --dry-run
 
 Gallery images stored as Cloudinary URLs in DB are unchanged; only DB rows are copied.
+
+Why not auto-run on Render deploy?
+  Hosted builds run on Render’s servers — they cannot see your laptop’s MongoDB.
+  Either use ONE Atlas database for local + prod (recommended), or run `npm run sync-db`
+  from your PC before/after you push code when you use a local MongoDB.
 """
 from __future__ import annotations
 
@@ -40,6 +45,8 @@ from pymongo.errors import ServerSelectionTimeoutError
 
 BACKEND_ROOT = Path(__file__).resolve().parents[1]
 load_dotenv(BACKEND_ROOT / ".env")
+# Optional: DEST_MONGO_URL / DEST_DB_NAME without exporting env vars (see .env.sync.example)
+load_dotenv(BACKEND_ROOT / ".env.sync", override=False)
 
 # All collections used by server.py + site_content.py
 COLLECTIONS = [

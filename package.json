@@ -1,0 +1,9 @@
+{
+  "name": "laabdanceacademy",
+  "private": true,
+  "description": "Root scripts for DB sync. Frontend: cd frontend && npm start",
+  "scripts": {
+    "sync-db": "python backend/scripts/copy_mongo_to_production.py",
+    "sync-db:dry": "python backend/scripts/copy_mongo_to_production.py --dry-run"
+  }
+}

@@ -37,6 +37,9 @@ dist
 !.env.production
 !frontend/.env.development
 backend/.env
+backend/.env.sync
+!backend/.env.example
+!backend/.env.sync.example
 frontend/.env
 
 *token.json*
